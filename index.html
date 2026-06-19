@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Disease Predictor & Weather Insight</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .symptom-tag { cursor: pointer; transition: all 0.2s; }
+        .symptom-tag.selected { background-color: #2563eb; color: white; border-color: #2563eb; }
+        .symptom-tag:hover { border-color: #2563eb; }
+        .hidden { display: none; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 2s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="p-6 md:p-12">
+    <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
+        <header class="bg-blue-600 p-8 text-white text-center">
+            <h1 class="text-3xl font-bold mb-2">Disease Predictor & Weather Insight</h1>
+            <p class="text-blue-100">AI-powered diagnosis with real-time weather integration</p>
+        </header>
+
+        <main class="p-8">
+            <div id="step-1">
+                <h2 class="text-xl font-semibold mb-4 text-gray-800">Select Your Symptoms</h2>
+                <div class="mb-6">
+                    <input type="text" id="symptom-search" placeholder="Search symptoms (e.g., Fever, Cough...)" 
+                           class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <div id="symptoms-container" class="flex flex-wrap gap-2 mb-8 max-h-64 overflow-y-auto p-2 border border-gray-100 rounded-lg bg-gray-50">
+                    <!-- Symptoms will be loaded here -->
+                </div>
+
+                <div class="mb-8">
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Selected Symptoms:</h3>
+                    <div id="selected-symptoms" class="flex flex-wrap gap-2 min-h-[40px] p-3 border border-dashed border-gray-300 rounded-lg">
+                        <!-- Selected symptoms will appear here -->
+                        <span class="text-gray-400 italic text-sm">No symptoms selected yet...</span>
+                    </div>
+                </div>
+
+                <button id="predict-btn" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 transition duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed">
+                    Analyze Symptoms
+                </button>
+            </div>
+
+            <div id="loader-container" class="hidden flex flex-col items-center justify-center py-12">
+                <div class="loader mb-4"></div>
+                <p class="text-gray-600">Analyzing symptoms and fetching weather data...</p>
+            </div>
+
+            <div id="results-container" class="hidden space-y-8 animate-fade-in">
+                <!-- Weather Info -->
+                <div id="weather-info" class="bg-blue-50 border border-blue-100 p-6 rounded-xl flex items-center space-x-4">
+                    <div class="text-3xl">🌤️</div>
+                    <div>
+                        <h3 class="font-bold text-blue-900">Current Weather at <span id="res-city">--</span></h3>
+                        <p class="text-blue-800" id="res-weather-desc">--</p>
+                    </div>
+                </div>
+
+                <!-- Prediction -->
+                <div class="bg-green-50 border border-green-100 p-8 rounded-2xl text-center">
+                    <h3 class="text-sm font-bold text-green-700 uppercase tracking-widest mb-1">Likely Diagnosis</h3>
+                    <h2 class="text-4xl font-extrabold text-green-900 mb-2" id="res-disease">--</h2>
+                    <p class="text-green-700 font-medium">Confidence Level: <span id="res-confidence">--</span>%</p>
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-6">
+                    <!-- Medicines -->
+                    <div class="bg-white border border-gray-200 p-6 rounded-xl shadow-sm">
+                        <h4 class="font-bold text-gray-800 mb-4 flex items-center">
+                            <span class="mr-2">💊</span> Medicines
+                        </h4>
+                        <ul id="res-medicines" class="space-y-2 text-gray-600 list-disc pl-4"></ul>
+                    </div>
+
+                    <!-- Ayurvedic -->
+                    <div class="bg-white border border-gray-200 p-6 rounded-xl shadow-sm">
+                        <h4 class="font-bold text-gray-800 mb-4 flex items-center">
+                            <span class="mr-2">🌿</span> Ayurvedic Remedies
+                        </h4>
+                        <ul id="res-ayurvedic" class="space-y-2 text-gray-600 list-disc pl-4"></ul>
+                    </div>
+
+                    <!-- Diet -->
+                    <div class="bg-white border border-gray-200 p-6 rounded-xl shadow-sm">
+                        <h4 class="font-bold text-gray-800 mb-4 flex items-center">
+                            <span class="mr-2">🥗</span> Recommended Diet
+                        </h4>
+                        <ul id="res-diet" class="space-y-2 text-gray-600 list-disc pl-4"></ul>
+                    </div>
+                </div>
+
+                <!-- Weather Advice -->
+                <div id="weather-advice-container" class="bg-amber-50 border border-amber-100 p-6 rounded-xl">
+                    <h4 class="font-bold text-amber-900 mb-2 flex items-center">
+                        <span class="mr-2">⚠️</span> Weather Impact Note
+                    </h4>
+                    <p id="res-weather-advice" class="text-amber-800"></p>
+                </div>
+
+                <button id="reset-btn" class="w-full border-2 border-gray-300 text-gray-600 font-bold py-3 rounded-xl hover:bg-gray-50 transition duration-300">
+                    New Assessment
+                </button>
+                <p class="text-xs text-center text-gray-400 mt-4">Disclaimer: This is an AI-powered prediction and should not replace professional medical advice.</p>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const symptomsContainer = document.getElementById('symptoms-container');
+        const selectedContainer = document.getElementById('selected-symptoms');
+        const searchInput = document.getElementById('symptom-search');
+        const predictBtn = document.getElementById('predict-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const step1 = document.getElementById('step-1');
+        const resultsContainer = document.getElementById('results-container');
+        const loaderContainer = document.getElementById('loader-container');
+
+        let allSymptoms = [];
+        let selectedSymptoms = new Set();
+
+        // Fetch symptoms from API
+        async function fetchSymptoms() {
+            try {
+                const response = await fetch('http://localhost:5001/symptoms');
+                allSymptoms = await response.json();
+                renderSymptoms();
+            } catch (error) {
+                console.error('Error fetching symptoms:', error);
+            }
+        }
+
+        function renderSymptoms(filter = '') {
+            symptomsContainer.innerHTML = '';
+            const filtered = allSymptoms.filter(s => s.toLowerCase().includes(filter.toLowerCase()));
+            
+            filtered.forEach(symptom => {
+                const span = document.createElement('span');
+                span.className = `symptom-tag px-3 py-1.5 border border-gray-300 rounded-full text-sm font-medium ${selectedSymptoms.has(symptom) ? 'selected' : 'bg-white text-gray-700'}`;
+                span.textContent = symptom;
+                span.onclick = () => toggleSymptom(symptom);
+                symptomsContainer.appendChild(span);
+            });
+        }
+
+        function toggleSymptom(symptom) {
+            if (selectedSymptoms.has(symptom)) {
+                selectedSymptoms.delete(symptom);
+            } else {
+                selectedSymptoms.add(symptom);
+            }
+            updateSelectedUI();
+            renderSymptoms(searchInput.value);
+            predictBtn.disabled = selectedSymptoms.size === 0;
+        }
+
+        function updateSelectedUI() {
+            if (selectedSymptoms.size === 0) {
+                selectedContainer.innerHTML = '<span class="text-gray-400 italic text-sm">No symptoms selected yet...</span>';
+                return;
+            }
+            selectedContainer.innerHTML = '';
+            selectedSymptoms.forEach(symptom => {
+                const span = document.createElement('span');
+                span.className = 'bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold flex items-center';
+                span.innerHTML = `${symptom} <button class="ml-2 hover:text-blue-600" onclick="event.stopPropagation(); toggleSymptom('${symptom}')">×</button>`;
+                selectedContainer.appendChild(span);
+            });
+        }
+
+        searchInput.oninput = (e) => renderSymptoms(e.target.value);
+
+        predictBtn.onclick = async () => {
+            step1.classList.add('hidden');
+            loaderContainer.classList.remove('hidden');
+
+            try {
+                const response = await fetch('http://localhost:5001/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ symptoms: Array.from(selectedSymptoms) })
+                });
+
+                const data = await response.json();
+                displayResults(data);
+            } catch (error) {
+                alert('Error connecting to backend server.');
+                step1.classList.remove('hidden');
+                loaderContainer.classList.add('hidden');
+            }
+        };
+
+        function displayResults(data) {
+            loaderContainer.classList.add('hidden');
+            resultsContainer.classList.remove('hidden');
+
+            document.getElementById('res-city').textContent = data.weather ? data.weather.city : 'Unknown';
+            document.getElementById('res-weather-desc').textContent = data.weather 
+                ? `${data.weather.temp}°C, ${data.weather.condition}`
+                : 'Weather data unavailable';
+            
+            document.getElementById('res-disease').textContent = data.disease;
+            document.getElementById('res-confidence').textContent = data.confidence;
+            
+            const fillList = (id, items) => {
+                const list = document.getElementById(id);
+                list.innerHTML = items.length ? items.map(i => `<li>${i}</li>`).join('') : '<li>No specific recommendations available</li>';
+            };
+
+            fillList('res-medicines', data.medicines);
+            fillList('res-ayurvedic', data.ayurvedic);
+            fillList('res-diet', data.diet);
+
+            const adviceContainer = document.getElementById('weather-advice-container');
+            if (data.weather_advice) {
+                adviceContainer.classList.remove('hidden');
+                document.getElementById('res-weather-advice').textContent = data.weather_advice;
+            } else {
+                adviceContainer.classList.add('hidden');
+            }
+        }
+
+        resetBtn.onclick = () => {
+            selectedSymptoms.clear();
+            updateSelectedUI();
+            renderSymptoms();
+            resultsContainer.classList.add('hidden');
+            step1.classList.remove('hidden');
+            predictBtn.disabled = true;
+            searchInput.value = '';
+        };
+
+        fetchSymptoms();
+    </script>
+</body>
+</html>
